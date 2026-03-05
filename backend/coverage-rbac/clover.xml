@@ -1,0 +1,321 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<coverage generated="1772690834775" clover="3.2.0">
+  <project timestamp="1772690834775" name="All files">
+    <metrics statements="270" coveredstatements="230" conditionals="160" coveredconditionals="118" methods="45" coveredmethods="36" elements="475" coveredelements="384" complexity="0" loc="270" ncloc="270" packages="5" files="10" classes="10"/>
+    <package name="rbac">
+      <metrics statements="188" coveredstatements="150" conditionals="120" coveredconditionals="83" methods="36" coveredmethods="28"/>
+      <file name="rbac.registry.ts" path="/Users/growlt296/AIDD-todo-app/backend/src/rbac/rbac.registry.ts">
+        <metrics statements="8" coveredstatements="8" conditionals="2" coveredconditionals="2" methods="3" coveredmethods="3"/>
+        <line num="8" count="2" type="stmt"/>
+        <line num="11" count="2" type="stmt"/>
+        <line num="43" count="2" type="stmt"/>
+        <line num="44" count="8" type="stmt"/>
+        <line num="76" count="2" type="stmt"/>
+        <line num="77" count="3" type="stmt"/>
+        <line num="83" count="2" type="stmt"/>
+        <line num="84" count="20" type="cond" truecount="2" falsecount="0"/>
+      </file>
+      <file name="rbac.service.ts" path="/Users/growlt296/AIDD-todo-app/backend/src/rbac/rbac.service.ts">
+        <metrics statements="180" coveredstatements="142" conditionals="118" coveredconditionals="81" methods="33" coveredmethods="25"/>
+        <line num="1" count="1" type="stmt"/>
+        <line num="2" count="1" type="stmt"/>
+        <line num="3" count="1" type="stmt"/>
+        <line num="4" count="1" type="stmt"/>
+        <line num="5" count="1" type="stmt"/>
+        <line num="6" count="1" type="stmt"/>
+        <line num="7" count="1" type="stmt"/>
+        <line num="8" count="1" type="stmt"/>
+        <line num="9" count="1" type="stmt"/>
+        <line num="10" count="1" type="stmt"/>
+        <line num="11" count="1" type="stmt"/>
+        <line num="32" count="1" type="stmt"/>
+        <line num="34" count="1" type="stmt"/>
+        <line num="37" count="1" type="stmt"/>
+        <line num="39" count="41" type="cond" truecount="6" falsecount="2"/>
+        <line num="40" count="41" type="cond" truecount="3" falsecount="1"/>
+        <line num="41" count="41" type="cond" truecount="3" falsecount="1"/>
+        <line num="42" count="41" type="stmt"/>
+        <line num="45" count="41" type="cond" truecount="1" falsecount="1"/>
+        <line num="47" count="41" type="stmt"/>
+        <line num="51" count="4" type="cond" truecount="1" falsecount="1"/>
+        <line num="52" count="4" type="cond" truecount="1" falsecount="1"/>
+        <line num="53" count="4" type="stmt"/>
+        <line num="54" count="4" type="cond" truecount="2" falsecount="0"/>
+        <line num="58" count="3" type="stmt"/>
+        <line num="59" count="3" type="cond" truecount="2" falsecount="0"/>
+        <line num="60" count="1" type="stmt"/>
+        <line num="62" count="2" type="stmt"/>
+        <line num="63" count="2" type="cond" truecount="2" falsecount="0"/>
+        <line num="64" count="1" type="stmt"/>
+        <line num="66" count="1" type="cond" truecount="1" falsecount="1"/>
+        <line num="67" count="1" type="stmt"/>
+        <line num="71" count="5" type="cond" truecount="2" falsecount="0"/>
+        <line num="72" count="1" type="stmt"/>
+        <line num="74" count="4" type="stmt"/>
+        <line num="78" count="4" type="cond" truecount="2" falsecount="0"/>
+        <line num="79" count="1" type="stmt"/>
+        <line num="81" count="3" type="stmt"/>
+        <line num="85" count="2" type="stmt"/>
+        <line num="86" count="2" type="stmt"/>
+        <line num="87" count="2" type="cond" truecount="2" falsecount="0"/>
+        <line num="88" count="1" type="stmt"/>
+        <line num="89" count="1" type="stmt"/>
+        <line num="91" count="2" type="stmt"/>
+        <line num="101" count="2" type="stmt"/>
+        <line num="108" count="2" type="stmt"/>
+        <line num="109" count="2" type="cond" truecount="2" falsecount="0"/>
+        <line num="110" count="1" type="stmt"/>
+        <line num="112" count="1" type="cond" truecount="1" falsecount="1"/>
+        <line num="113" count="1" type="stmt"/>
+        <line num="114" count="1" type="cond" truecount="1" falsecount="1"/>
+        <line num="115" count="0" type="stmt"/>
+        <line num="117" count="1" type="stmt"/>
+        <line num="118" count="1" type="cond" truecount="1" falsecount="1"/>
+        <line num="119" count="0" type="stmt"/>
+        <line num="121" count="1" type="stmt"/>
+        <line num="123" count="1" type="cond" truecount="1" falsecount="1"/>
+        <line num="124" count="1" type="cond" truecount="1" falsecount="1"/>
+        <line num="126" count="1" type="cond" truecount="1" falsecount="1"/>
+        <line num="127" count="0" type="stmt"/>
+        <line num="128" count="0" type="stmt"/>
+        <line num="129" count="1" type="cond" truecount="1" falsecount="1"/>
+        <line num="130" count="0" type="stmt"/>
+        <line num="132" count="1" type="stmt"/>
+        <line num="133" count="1" type="stmt"/>
+        <line num="137" count="2" type="stmt"/>
+        <line num="138" count="2" type="cond" truecount="1" falsecount="1"/>
+        <line num="139" count="0" type="stmt"/>
+        <line num="141" count="2" type="cond" truecount="2" falsecount="0"/>
+        <line num="142" count="1" type="stmt"/>
+        <line num="148" count="1" type="stmt"/>
+        <line num="149" count="1" type="stmt"/>
+        <line num="150" count="1" type="stmt"/>
+        <line num="151" count="0" type="stmt"/>
+        <line num="156" count="2" type="stmt"/>
+        <line num="157" count="2" type="stmt"/>
+        <line num="158" count="2" type="cond" truecount="2" falsecount="0"/>
+        <line num="159" count="1" type="stmt"/>
+        <line num="160" count="1" type="stmt"/>
+        <line num="162" count="2" type="stmt"/>
+        <line num="172" count="2" type="stmt"/>
+        <line num="176" count="5" type="stmt"/>
+        <line num="180" count="4" type="cond" truecount="2" falsecount="0"/>
+        <line num="181" count="1" type="stmt"/>
+        <line num="187" count="3" type="stmt"/>
+        <line num="188" count="3" type="cond" truecount="2" falsecount="0"/>
+        <line num="189" count="1" type="stmt"/>
+        <line num="191" count="2" type="stmt"/>
+        <line num="192" count="2" type="cond" truecount="2" falsecount="0"/>
+        <line num="193" count="1" type="stmt"/>
+        <line num="195" count="1" type="stmt"/>
+        <line num="198" count="1" type="stmt"/>
+        <line num="199" count="0" type="stmt"/>
+        <line num="201" count="1" type="stmt"/>
+        <line num="205" count="3" type="stmt"/>
+        <line num="206" count="3" type="cond" truecount="2" falsecount="0"/>
+        <line num="207" count="1" type="stmt"/>
+        <line num="209" count="2" type="stmt"/>
+        <line num="210" count="2" type="cond" truecount="2" falsecount="0"/>
+        <line num="211" count="1" type="stmt"/>
+        <line num="213" count="1" type="stmt"/>
+        <line num="214" count="1" type="stmt"/>
+        <line num="215" count="0" type="stmt"/>
+        <line num="220" count="4" type="cond" truecount="5" falsecount="0"/>
+        <line num="221" count="1" type="stmt"/>
+        <line num="223" count="3" type="stmt"/>
+        <line num="224" count="3" type="cond" truecount="2" falsecount="0"/>
+        <line num="225" count="1" type="stmt"/>
+        <line num="226" count="1" type="cond" truecount="1" falsecount="1"/>
+        <line num="227" count="1" type="stmt"/>
+        <line num="230" count="2" type="stmt"/>
+        <line num="231" count="2" type="cond" truecount="2" falsecount="0"/>
+        <line num="232" count="1" type="stmt"/>
+        <line num="234" count="1" type="stmt"/>
+        <line num="239" count="1" type="stmt"/>
+        <line num="240" count="0" type="stmt"/>
+        <line num="245" count="3" type="stmt"/>
+        <line num="246" count="3" type="cond" truecount="2" falsecount="0"/>
+        <line num="247" count="1" type="stmt"/>
+        <line num="249" count="2" type="stmt"/>
+        <line num="250" count="2" type="cond" truecount="2" falsecount="0"/>
+        <line num="251" count="1" type="stmt"/>
+        <line num="253" count="1" type="stmt"/>
+        <line num="254" count="0" type="stmt"/>
+        <line num="259" count="4" type="stmt"/>
+        <line num="264" count="4" type="stmt"/>
+        <line num="265" count="2" type="stmt"/>
+        <line num="266" count="2" type="stmt"/>
+        <line num="267" count="4" type="stmt"/>
+        <line num="271" count="3" type="stmt"/>
+        <line num="272" count="3" type="stmt"/>
+        <line num="273" count="3" type="stmt"/>
+        <line num="274" count="1" type="cond" truecount="1" falsecount="1"/>
+        <line num="276" count="1" type="cond" truecount="4" falsecount="1"/>
+        <line num="279" count="1" type="stmt"/>
+        <line num="282" count="3" type="cond" truecount="2" falsecount="0"/>
+        <line num="283" count="1" type="stmt"/>
+        <line num="284" count="1" type="stmt"/>
+        <line num="285" count="1" type="stmt"/>
+        <line num="290" count="3" type="cond" truecount="2" falsecount="0"/>
+        <line num="291" count="1" type="stmt"/>
+        <line num="293" count="2" type="stmt"/>
+        <line num="294" count="2" type="cond" truecount="2" falsecount="0"/>
+        <line num="295" count="1" type="stmt"/>
+        <line num="297" count="1" type="stmt"/>
+        <line num="298" count="2" type="stmt"/>
+        <line num="303" count="2" type="stmt"/>
+        <line num="315" count="1" type="cond" truecount="1" falsecount="1"/>
+        <line num="316" count="1" type="stmt"/>
+        <line num="322" count="0" type="stmt"/>
+        <line num="323" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="324" count="0" type="stmt"/>
+        <line num="330" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="331" count="0" type="stmt"/>
+        <line num="332" count="0" type="stmt"/>
+        <line num="333" count="0" type="stmt"/>
+        <line num="334" count="0" type="stmt"/>
+        <line num="335" count="0" type="stmt"/>
+        <line num="336" count="0" type="stmt"/>
+        <line num="337" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="338" count="0" type="stmt"/>
+        <line num="344" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="345" count="0" type="stmt"/>
+        <line num="359" count="0" type="stmt"/>
+        <line num="360" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="361" count="0" type="stmt"/>
+        <line num="362" count="0" type="stmt"/>
+        <line num="364" count="0" type="stmt"/>
+        <line num="368" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="370" count="0" type="stmt"/>
+        <line num="375" count="2" type="stmt"/>
+        <line num="376" count="2" type="cond" truecount="1" falsecount="1"/>
+        <line num="377" count="0" type="stmt"/>
+        <line num="378" count="0" type="stmt"/>
+        <line num="385" count="3" type="stmt"/>
+        <line num="386" count="3" type="cond" truecount="1" falsecount="1"/>
+        <line num="387" count="0" type="stmt"/>
+        <line num="388" count="0" type="stmt"/>
+        <line num="389" count="0" type="stmt"/>
+        <line num="390" count="0" type="stmt"/>
+      </file>
+    </package>
+    <package name="rbac.errors">
+      <metrics statements="8" coveredstatements="6" conditionals="4" coveredconditionals="2" methods="3" coveredmethods="2"/>
+      <file name="rbac.exception.ts" path="/Users/growlt296/AIDD-todo-app/backend/src/rbac/errors/rbac.exception.ts">
+        <metrics statements="8" coveredstatements="6" conditionals="4" coveredconditionals="2" methods="3" coveredmethods="2"/>
+        <line num="1" count="3" type="stmt"/>
+        <line num="3" count="3" type="stmt"/>
+        <line num="22" count="3" type="stmt"/>
+        <line num="29" count="30" type="stmt"/>
+        <line num="36" count="0" type="stmt"/>
+        <line num="37" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="41" count="1" type="stmt"/>
+        <line num="42" count="1" type="stmt"/>
+      </file>
+    </package>
+    <package name="rbac.guards">
+      <metrics statements="40" coveredstatements="40" conditionals="14" coveredconditionals="13" methods="4" coveredmethods="4"/>
+      <file name="permissions-attachment.guard.ts" path="/Users/growlt296/AIDD-todo-app/backend/src/rbac/guards/permissions-attachment.guard.ts">
+        <metrics statements="18" coveredstatements="18" conditionals="2" coveredconditionals="2" methods="2" coveredmethods="2"/>
+        <line num="1" count="1" type="stmt"/>
+        <line num="9" count="1" type="stmt"/>
+        <line num="10" count="1" type="stmt"/>
+        <line num="11" count="1" type="stmt"/>
+        <line num="12" count="1" type="stmt"/>
+        <line num="29" count="1" type="stmt"/>
+        <line num="30" count="4" type="stmt"/>
+        <line num="33" count="4" type="stmt"/>
+        <line num="37" count="5" type="stmt"/>
+        <line num="38" count="5" type="stmt"/>
+        <line num="39" count="5" type="cond" truecount="2" falsecount="0"/>
+        <line num="40" count="2" type="stmt"/>
+        <line num="46" count="3" type="stmt"/>
+        <line num="47" count="3" type="stmt"/>
+        <line num="48" count="1" type="stmt"/>
+        <line num="49" count="1" type="stmt"/>
+        <line num="51" count="2" type="stmt"/>
+        <line num="52" count="2" type="stmt"/>
+      </file>
+      <file name="require-permission.guard.ts" path="/Users/growlt296/AIDD-todo-app/backend/src/rbac/guards/require-permission.guard.ts">
+        <metrics statements="22" coveredstatements="22" conditionals="12" coveredconditionals="11" methods="2" coveredmethods="2"/>
+        <line num="1" count="1" type="stmt"/>
+        <line num="6" count="1" type="stmt"/>
+        <line num="8" count="1" type="stmt"/>
+        <line num="9" count="1" type="stmt"/>
+        <line num="10" count="1" type="stmt"/>
+        <line num="11" count="1" type="stmt"/>
+        <line num="12" count="1" type="stmt"/>
+        <line num="19" count="1" type="stmt"/>
+        <line num="20" count="8" type="cond" truecount="3" falsecount="1"/>
+        <line num="23" count="11" type="stmt"/>
+        <line num="24" count="11" type="stmt"/>
+        <line num="25" count="11" type="cond" truecount="2" falsecount="0"/>
+        <line num="26" count="3" type="stmt"/>
+        <line num="32" count="8" type="stmt"/>
+        <line num="33" count="8" type="cond" truecount="2" falsecount="0"/>
+        <line num="34" count="2" type="stmt"/>
+        <line num="40" count="6" type="stmt"/>
+        <line num="41" count="6" type="cond" truecount="2" falsecount="0"/>
+        <line num="42" count="1" type="stmt"/>
+        <line num="44" count="5" type="cond" truecount="2" falsecount="0"/>
+        <line num="45" count="2" type="stmt"/>
+        <line num="52" count="3" type="stmt"/>
+      </file>
+    </package>
+    <package name="rbac.schemas">
+      <metrics statements="24" coveredstatements="24" conditionals="8" coveredconditionals="6" methods="0" coveredmethods="0"/>
+      <file name="permission.schema.ts" path="/Users/growlt296/AIDD-todo-app/backend/src/rbac/schemas/permission.schema.ts">
+        <metrics statements="6" coveredstatements="6" conditionals="0" coveredconditionals="0" methods="0" coveredmethods="0"/>
+        <line num="1" count="1" type="stmt"/>
+        <line num="7" count="1" type="stmt"/>
+        <line num="13" count="1" type="stmt"/>
+        <line num="15" count="1" type="stmt"/>
+        <line num="18" count="1" type="stmt"/>
+        <line num="21" count="1" type="stmt"/>
+      </file>
+      <file name="role.schema.ts" path="/Users/growlt296/AIDD-todo-app/backend/src/rbac/schemas/role.schema.ts">
+        <metrics statements="9" coveredstatements="9" conditionals="0" coveredconditionals="0" methods="0" coveredmethods="0"/>
+        <line num="1" count="1" type="stmt"/>
+        <line num="2" count="1" type="stmt"/>
+        <line num="11" count="1" type="stmt"/>
+        <line num="13" count="1" type="stmt"/>
+        <line num="16" count="1" type="stmt"/>
+        <line num="19" count="1" type="stmt"/>
+        <line num="22" count="1" type="stmt"/>
+        <line num="25" count="1" type="stmt"/>
+        <line num="27" count="1" type="stmt"/>
+      </file>
+      <file name="user-role.schema.ts" path="/Users/growlt296/AIDD-todo-app/backend/src/rbac/schemas/user-role.schema.ts">
+        <metrics statements="9" coveredstatements="9" conditionals="8" coveredconditionals="6" methods="0" coveredmethods="0"/>
+        <line num="1" count="1" type="stmt"/>
+        <line num="2" count="1" type="stmt"/>
+        <line num="11" count="1" type="stmt"/>
+        <line num="13" count="1" type="stmt"/>
+        <line num="16" count="1" type="cond" truecount="3" falsecount="1"/>
+        <line num="19" count="1" type="cond" truecount="3" falsecount="1"/>
+        <line num="22" count="1" type="stmt"/>
+        <line num="23" count="1" type="stmt"/>
+        <line num="24" count="1" type="stmt"/>
+      </file>
+    </package>
+    <package name="rbac.utils">
+      <metrics statements="10" coveredstatements="10" conditionals="14" coveredconditionals="14" methods="2" coveredmethods="2"/>
+      <file name="regex-escape.ts" path="/Users/growlt296/AIDD-todo-app/backend/src/rbac/utils/regex-escape.ts">
+        <metrics statements="3" coveredstatements="3" conditionals="4" coveredconditionals="4" methods="1" coveredmethods="1"/>
+        <line num="5" count="2" type="stmt"/>
+        <line num="6" count="12" type="cond" truecount="4" falsecount="0"/>
+        <line num="7" count="10" type="stmt"/>
+      </file>
+      <file name="wildcard.matcher.ts" path="/Users/growlt296/AIDD-todo-app/backend/src/rbac/utils/wildcard.matcher.ts">
+        <metrics statements="7" coveredstatements="7" conditionals="10" coveredconditionals="10" methods="1" coveredmethods="1"/>
+        <line num="5" count="2" type="stmt"/>
+        <line num="6" count="24" type="cond" truecount="2" falsecount="0"/>
+        <line num="7" count="22" type="cond" truecount="2" falsecount="0"/>
+        <line num="8" count="17" type="cond" truecount="2" falsecount="0"/>
+        <line num="9" count="14" type="stmt"/>
+        <line num="10" count="14" type="cond" truecount="4" falsecount="0"/>
+        <line num="11" count="9" type="stmt"/>
+      </file>
+    </package>
+  </project>
+</coverage>
