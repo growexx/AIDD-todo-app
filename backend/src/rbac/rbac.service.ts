@@ -8,6 +8,7 @@ import { RbacException } from './errors/rbac.exception';
 import { RBAC_ERROR_CODES } from './errors/rbac.exception';
 import { HttpStatus } from '@nestjs/common';
 import { isValidPermissionCode } from './rbac.registry';
+import { escapeForRegex } from './utils/regex-escape';
 
 export interface RbacConfig {
   userExistsValidator?: (userId: string) => Promise<boolean>;
@@ -38,6 +39,7 @@ export class RbacService {
     @InjectModel(Role.name) private roleModel: Model<RoleDocument>,
     @InjectModel(Permission.name) private permissionModel: Model<PermissionDocument>,
     @InjectModel(UserRole.name) private userRoleModel: Model<UserRoleDocument>,
+    @Optional() @InjectModel('User') private userModel?: Model<{ _id: Types.ObjectId }>,
     @Optional() @Inject(RBAC_CONFIG) config: RbacConfig = {},
   ) {
     this.config = config ?? {};
@@ -83,16 +85,26 @@ export class RbacService {
     const { page, limit, skip, search } = this.normalizeListOptions(opts);
     const filter: Record<string, unknown> = {};
     if (search) {
-      filter.name = { $regex: search, $options: 'i' };
+      const escaped = escapeForRegex(search);
+      filter.name = { $regex: escaped, $options: 'i' };
     }
     const [data, total] = await Promise.all([
-      this.roleModel.find(filter).populate('permissions').skip(skip).limit(limit).sort({ name: 1 }).exec(),
+      this.roleModel
+        .find(filter)
+        .lean()
+        .skip(skip)
+        .limit(limit)
+        .sort({ name: 1 })
+        .exec(),
       this.roleModel.countDocuments(filter).exec(),
     ]);
     return { data: data as RoleDocument[], total, page, limit };
   }
 
-  async updateRole(id: string, payload: { name?: string; description?: string }): Promise<RoleDocument> {
+  async updateRole(
+    id: string,
+    payload: { name?: string; description?: string; isDefault?: boolean },
+  ): Promise<RoleDocument> {
     const role = await this.roleModel.findById(id).exec();
     if (!role) {
       throw new RbacException(HttpStatus.NOT_FOUND, RBAC_ERROR_CODES.NOT_FOUND, 'Role not found');
@@ -111,6 +123,12 @@ export class RbacService {
     if (payload.description !== undefined) {
       role.description = payload.description?.trim() ?? '';
     }
+    if (payload.isDefault === true) {
+      await this.roleModel.updateMany({ isDefault: true, _id: { $ne: id } }, { $set: { isDefault: false } }).exec();
+      role.isDefault = true;
+    } else if (payload.isDefault === false) {
+      role.isDefault = false;
+    }
     await role.save();
     return this.getRoleById(id);
   }
@@ -119,6 +137,13 @@ export class RbacService {
     const role = await this.roleModel.findById(id).exec();
     if (!role) {
       throw new RbacException(HttpStatus.NOT_FOUND, RBAC_ERROR_CODES.NOT_FOUND, 'Role not found');
+    }
+    if (role.isDefault) {
+      throw new RbacException(
+        HttpStatus.CONFLICT,
+        RBAC_ERROR_CODES.CONFLICT,
+        'Cannot delete the default user role. Assign a different default role first.',
+      );
     }
     await this.userRoleModel.deleteMany({ roleId: role._id }).exec();
     await this.roleModel.findByIdAndDelete(id).exec();
@@ -131,10 +156,17 @@ export class RbacService {
     const { page, limit, skip, search } = this.normalizeListOptions(opts);
     const filter: Record<string, unknown> = {};
     if (search) {
-      filter.code = { $regex: search, $options: 'i' };
+      const escaped = escapeForRegex(search);
+      filter.code = { $regex: escaped, $options: 'i' };
     }
     const [data, total] = await Promise.all([
-      this.permissionModel.find(filter).skip(skip).limit(limit).sort({ code: 1 }).exec(),
+      this.permissionModel
+        .find(filter)
+        .lean()
+        .skip(skip)
+        .limit(limit)
+        .sort({ code: 1 })
+        .exec(),
       this.permissionModel.countDocuments(filter).exec(),
     ]);
     return { data: data as PermissionDocument[], total, page, limit };
@@ -240,13 +272,96 @@ export class RbacService {
     const permissionIds = new Set<Types.ObjectId>();
     for (const r of roles) {
       for (const p of r.permissions || []) {
-        permissionIds.add(p as Types.ObjectId);
+        // When populated, p is a full document; otherwise ObjectId
+        const id = p && typeof p === 'object' && '_id' in (p as object)
+          ? (p as { _id: Types.ObjectId })._id
+          : (p as Types.ObjectId);
+        permissionIds.add(id);
       }
     }
     if (permissionIds.size === 0) return [];
     const permissions = await this.permissionModel.find({ _id: { $in: Array.from(permissionIds) } }).exec();
-    const codes = permissions.map((p) => p.code);
+    const codes = permissions.map((p) => p.code) as string[];
     return [...new Set(codes)];
+  }
+
+  /** Get all userIds assigned to a role (for Role Detail Page). */
+  async getUsersByRole(roleId: string): Promise<{ userId: string }[]> {
+    if (!Types.ObjectId.isValid(roleId)) {
+      throw new RbacException(HttpStatus.NOT_FOUND, RBAC_ERROR_CODES.NOT_FOUND, 'Role not found');
+    }
+    const role = await this.roleModel.findById(roleId).exec();
+    if (!role) {
+      throw new RbacException(HttpStatus.NOT_FOUND, RBAC_ERROR_CODES.NOT_FOUND, 'Role not found');
+    }
+    const list = await this.userRoleModel.find({ roleId: role._id }).select('userId').lean().exec();
+    return list.map((ur) => ({ userId: ur.userId }));
+  }
+
+  /** Get the role with isDefault: true, or null. */
+  async getDefaultRole(): Promise<RoleDocument | null> {
+    return this.roleModel.findOne({ isDefault: true }).exec() as Promise<RoleDocument | null>;
+  }
+
+  /**
+   * Assign the default role (isDefault: true) to all users who have no role in UserRole.
+   * Idempotent. Requires userModel to be injected.
+   */
+  async backfillDefaultRole(options: { batchSize?: number } = {}): Promise<{
+    processed: number;
+    backfilled: number;
+    skipped: number;
+  }> {
+    if (!this.userModel) {
+      throw new RbacException(
+        HttpStatus.NOT_IMPLEMENTED,
+        RBAC_ERROR_CODES.NOT_IMPLEMENTED,
+        'User model not configured for back-fill',
+      );
+    }
+    const defaultRole = await this.getDefaultRole();
+    if (!defaultRole) {
+      throw new RbacException(
+        HttpStatus.NOT_FOUND,
+        RBAC_ERROR_CODES.NOT_FOUND,
+        'No default role (isDefault: true) found',
+      );
+    }
+    const batchSize = Math.min(500, Math.max(1, options.batchSize ?? 100));
+    let assignedUserIds = await this.userRoleModel.distinct('userId').exec();
+    const skipped = assignedUserIds.length;
+    let processed = 0;
+    let backfilled = 0;
+    const toObjectId = (id: string) => new Types.ObjectId(id);
+    for (;;) {
+      const excluded = assignedUserIds.length ? assignedUserIds.map(toObjectId) : [];
+      const batch = await this.userModel!
+        .find(excluded.length ? { _id: { $nin: excluded } } : {})
+        .select('_id')
+        .limit(batchSize)
+        .lean()
+        .exec();
+      if (batch.length === 0) break;
+      const ops = batch.map((u: { _id: Types.ObjectId }) => ({
+        updateOne: {
+          filter: { userId: u._id.toString(), roleId: defaultRole._id },
+          update: {
+            $setOnInsert: {
+              userId: u._id.toString(),
+              roleId: defaultRole._id,
+              assignedAt: new Date(),
+              isBackfilled: true,
+            },
+          },
+          upsert: true,
+        },
+      }));
+      const result = await this.userRoleModel.bulkWrite(ops as never, { ordered: false });
+      backfilled += result.upsertedCount ?? 0;
+      processed += batch.length;
+      assignedUserIds = await this.userRoleModel.distinct('userId').exec();
+    }
+    return { processed, backfilled, skipped };
   }
 
   private logWarning(msg: string, err: unknown): void {

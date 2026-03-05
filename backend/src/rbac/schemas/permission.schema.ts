@@ -19,4 +19,4 @@ export class Permission {
 }
 
 export const PermissionSchema = SchemaFactory.createForClass(Permission);
-PermissionSchema.index({ code: 1 }, { unique: true });
+// code unique index is created by @Prop({ unique: true })

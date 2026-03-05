@@ -3,10 +3,12 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
+import { usePermission } from '@/rbac';
 
 export default function Navbar() {
   const router = useRouter();
   const { user, logout } = useAuth();
+  const { hasPermission } = usePermission('role:view');
 
   const handleLogout = () => {
     logout();
@@ -23,6 +25,14 @@ export default function Navbar() {
         >
           Settings
         </Link>
+        {hasPermission && (
+          <Link
+            href="/rbac-admin"
+            className="text-sm font-medium text-zinc-600 hover:text-zinc-800"
+          >
+            RBAC Admin
+          </Link>
+        )}
         <span className="text-sm text-zinc-600">{user?.name ?? user?.email}</span>
         <button
           type="button"

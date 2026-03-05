@@ -3,6 +3,7 @@
  * Never check role names — only aggregated permission codes.
  */
 export function matchesPermission(userPermissions: string[], required: string): boolean {
+  if (!Array.isArray(userPermissions)) return false;
   if (userPermissions.includes('*:*')) return true;
   if (userPermissions.includes(required)) return true;
   const [module] = required.split(':');

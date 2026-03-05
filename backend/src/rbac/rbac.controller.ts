@@ -23,6 +23,7 @@ import { UpdateRoleDto } from './dto/update-role.dto';
 import { ListQueryDto } from './dto/list-query.dto';
 import { AddPermissionDto } from './dto/add-permission.dto';
 import { AssignRoleDto } from './dto/assign-role.dto';
+import { BackfillDto } from './dto/backfill.dto';
 import { PERMISSIONS } from './rbac.registry';
 import { RbacException, RBAC_ERROR_CODES } from './errors/rbac.exception';
 
@@ -64,6 +65,16 @@ export class RbacController {
     return { data: result.data, meta: { page: result.page, limit: result.limit, total: result.total } };
   }
 
+  @Get('roles/:id/users')
+  @RequirePermission(PERMISSIONS.ROLE_VIEW)
+  @ApiOperation({ summary: 'Get users assigned to a role' })
+  @ApiResponse({ status: 200, description: 'List of userIds' })
+  @ApiResponse({ status: 404, description: 'Role not found' })
+  async getUsersByRole(@Param('id') id: string) {
+    const data = await this.rbacService.getUsersByRole(id);
+    return { data };
+  }
+
   @Get('roles/:id')
   @RequirePermission(PERMISSIONS.ROLE_VIEW)
   @ApiOperation({ summary: 'Get role by ID with permissions' })
@@ -80,7 +91,11 @@ export class RbacController {
   @ApiResponse({ status: 404, description: 'Role not found' })
   @ApiResponse({ status: 409, description: 'Name already taken' })
   async updateRole(@Param('id') id: string, @Body() dto: UpdateRoleDto) {
-    return this.rbacService.updateRole(id, { name: dto.name, description: dto.description });
+    return this.rbacService.updateRole(id, {
+      name: dto.name,
+      description: dto.description,
+      isDefault: dto.isDefault,
+    });
   }
 
   @Delete('roles/:id')
@@ -187,5 +202,16 @@ export class RbacController {
     }
     const permissions = await this.rbacService.getUserPermissions(id.trim());
     return { userId: id.trim(), permissions };
+  }
+
+  @Post('admin/backfill-default-role')
+  @RequirePermission(PERMISSIONS.ROLE_ASSIGN)
+  @ApiOperation({ summary: 'Back-fill default role to users with no role' })
+  @ApiResponse({ status: 200, description: 'processed, backfilled, skipped' })
+  @ApiResponse({ status: 404, description: 'No default role' })
+  @ApiResponse({ status: 501, description: 'User model not configured' })
+  async backfillDefaultRole(@Body() dto: BackfillDto) {
+    const result = await this.rbacService.backfillDefaultRole({ batchSize: dto.batchSize });
+    return { data: result };
   }
 }

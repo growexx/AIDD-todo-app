@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
+import { User, UserSchema } from '../auth/schemas/user.schema';
 import { Role, RoleSchema } from './schemas/role.schema';
 import { Permission, PermissionSchema } from './schemas/permission.schema';
 import { UserRole, UserRoleSchema } from './schemas/user-role.schema';
@@ -15,6 +16,7 @@ import { RBAC_PERMISSION_FETCHER } from './constants';
 @Module({
   imports: [
     MongooseModule.forFeature([
+      { name: User.name, schema: UserSchema },
       { name: Role.name, schema: RoleSchema },
       { name: Permission.name, schema: PermissionSchema },
       { name: UserRole.name, schema: UserRoleSchema },

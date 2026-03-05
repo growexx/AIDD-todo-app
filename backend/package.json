@@ -18,8 +18,11 @@
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
+    "test:rbac": "jest rbac --passWithNoTests",
+    "test:rbac:cov": "jest rbac --config jest.rbac.config.js --coverage --passWithNoTests",
     "seed": "ts-node -r tsconfig-paths/register src/database/seeder.ts",
-    "seed:rbac": "ts-node -r tsconfig-paths/register src/rbac/seed-runner.ts"
+    "seed:rbac": "ts-node -r tsconfig-paths/register src/rbac/seed-runner.ts",
+    "seed:all": "npm run seed && npm run seed:rbac"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",

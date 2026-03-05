@@ -44,3 +44,11 @@ export function decryptMfaSecret(cipherHex: string, keyHex: string): string {
 export function generateResetToken(): string {
   return crypto.randomBytes(32).toString('hex');
 }
+
+/**
+ * SHA-256 hash of reset token for storage. Server stores only the hash; raw token in URL only.
+ * Never log the raw token (audit A04).
+ */
+export function hashResetToken(token: string): string {
+  return crypto.createHash('sha256').update(token, 'utf8').digest('hex');
+}

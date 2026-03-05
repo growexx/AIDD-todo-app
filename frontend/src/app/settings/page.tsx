@@ -2,8 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import toast from 'react-hot-toast';
 import { useAuth } from '@/hooks/useAuth';
 import api from '@/lib/api';
+import { getApiErrorMessage } from '@/lib/getApiError';
 import Navbar from '@/components/Navbar';
 
 type MfaSetupState = 'idle' | 'loading' | 'qr';
@@ -25,7 +27,6 @@ export default function SettingsPage() {
   const [mfaSetupData, setMfaSetupData] = useState<MfaSetupResponse | null>(null);
   const [mfaCode, setMfaCode] = useState('');
   const [mfaConfirming, setMfaConfirming] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     setHydrated(true);
@@ -54,7 +55,6 @@ export default function SettingsPage() {
   }, [hydrated, isAuthenticated, router]);
 
   const startMfaSetup = async () => {
-    setError(null);
     setMfaSetupState('loading');
     try {
       const { data } = await api.post<{ success: true; data: MfaSetupResponse }>(
@@ -64,11 +64,7 @@ export default function SettingsPage() {
       setMfaSetupState('qr');
       setMfaCode('');
     } catch (err: unknown) {
-      const message =
-        err && typeof err === 'object' && 'response' in err
-          ? (err as { response?: { data?: { message?: string } } }).response?.data?.message
-          : 'Failed to start MFA setup';
-      setError(message ?? 'Failed to start MFA setup');
+      toast.error(getApiErrorMessage(err));
       setMfaSetupState('idle');
     }
   };
@@ -76,7 +72,6 @@ export default function SettingsPage() {
   const confirmMfa = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!mfaCode.trim()) return;
-    setError(null);
     setMfaConfirming(true);
     try {
       await api.post('/api/auth/mfa/confirm', { code: mfaCode.trim() });
@@ -84,12 +79,9 @@ export default function SettingsPage() {
       setMfaSetupData(null);
       setMfaSetupState('idle');
       setMfaCode('');
+      toast.success('Two-factor authentication enabled.');
     } catch (err: unknown) {
-      const message =
-        err && typeof err === 'object' && 'response' in err
-          ? (err as { response?: { data?: { message?: string } } }).response?.data?.message
-          : 'Invalid code';
-      setError(message ?? 'Invalid code');
+      toast.error(getApiErrorMessage(err));
     } finally {
       setMfaConfirming(false);
     }
@@ -99,7 +91,6 @@ export default function SettingsPage() {
     setMfaSetupData(null);
     setMfaSetupState('idle');
     setMfaCode('');
-    setError(null);
   };
 
   if (!hydrated || !isAuthenticated) {
@@ -189,7 +180,6 @@ export default function SettingsPage() {
                     Cancel
                   </button>
                 </form>
-                {error && <p className="text-sm text-red-600">{error}</p>}
               </div>
             ) : null}
           </div>

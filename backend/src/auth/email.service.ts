@@ -1,17 +1,20 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as nodemailer from 'nodemailer';
 import type { Transporter } from 'nodemailer';
 
-const LOCKED_SUBJECT = 'Account locked – reset your password and MFA';
-const LOCKED_BODY_TEMPLATE = `Your account has been locked after {{max_failed_attempts}} failed login attempts. Use the link below to reset your password and MFA. This link expires in 1 hour.
+const LOCKED_SUBJECT = 'Your account has been locked – reset required';
+const LOCKED_BODY_TEMPLATE = `Your account was locked after {{MAX_FAILED_ATTEMPTS}} failed login attempts.
+Click the link below to reset your password and (optionally) disable MFA.
+This link expires in 1 hour.
 
 {{reset_link}}
 
-If you did not request this, please secure your account.`;
+If you did not attempt to log in, please contact support immediately.`;
 
 @Injectable()
 export class EmailService {
+  private readonly logger = new Logger(EmailService.name);
   private transporter: Transporter | null = null;
 
   constructor(private readonly configService: ConfigService) {
@@ -31,19 +34,28 @@ export class EmailService {
 
   /**
    * Send "account locked" email with reset link. No-op if SMTP is not configured.
+   * Log send success at INFO (no token in log — only recipient domain or masked email).
    */
   async sendAccountLockedEmail(to: string, resetLink: string): Promise<void> {
     const maxAttempts = this.configService.get<number>('MAX_FAILED_ATTEMPTS') ?? 5;
     const body = LOCKED_BODY_TEMPLATE
-      .replace('{{max_failed_attempts}}', String(maxAttempts))
+      .replace('{{MAX_FAILED_ATTEMPTS}}', String(maxAttempts))
       .replace('{{reset_link}}', resetLink);
 
-    await this.sendMail({
-      to,
-      subject: LOCKED_SUBJECT,
-      text: body,
-      html: body.replace(/\n/g, '<br>'),
-    });
+    try {
+      await this.sendMail({
+        to,
+        subject: LOCKED_SUBJECT,
+        text: body,
+        html: body.replace(/\n/g, '<br>'),
+      });
+      const masked = to.includes('@') ? `***@${to.split('@')[1]}` : '***';
+      this.logger.log(`Account locked email sent to ${masked}`);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Unknown error';
+      this.logger.error('Account locked email failed', message);
+      throw new InternalServerErrorException('Failed to send email');
+    }
   }
 
   private async sendMail(options: {

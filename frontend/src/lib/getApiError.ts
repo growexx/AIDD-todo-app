@@ -19,16 +19,23 @@ export function getApiErrorMessage(err: unknown): string {
 
 /**
  * Extract both message and status from an API error.
+ * Handles: response.data.message (string or string[]), response.data.error.message,
+ * network errors (no response), and unknown errors.
  */
 export function getApiError(err: unknown): ApiErrorResult {
-  const ax = err as { response?: { status?: number; data?: { error?: { message?: string } } }; message?: string };
+  const ax = err as {
+    response?: { status?: number; data?: { message?: string | string[]; error?: { message?: string } } };
+    message?: string;
+  };
   const status = ax?.response?.status;
+  const dataMsg = ax?.response?.data?.message;
   const msg =
+    (Array.isArray(dataMsg) ? dataMsg[0] : typeof dataMsg === 'string' ? dataMsg : null) ??
     ax?.response?.data?.error?.message ??
+    (status === 403 ? 'Permission denied' : null) ??
+    (status === 401 ? 'Please log in' : null) ??
     ax?.message ??
-    'Something went wrong';
+    'Something went wrong. Please try again.';
 
-  if (status === 403) return { message: 'Permission denied', status: 403 };
-  if (status === 401) return { message: 'Please log in', status: 401 };
-  return { message: typeof msg === 'string' ? msg : 'Something went wrong', status };
+  return { message: typeof msg === 'string' ? msg : 'Something went wrong. Please try again.', status };
 }

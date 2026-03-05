@@ -68,6 +68,10 @@ export class User {
 
 export const UserSchema = SchemaFactory.createForClass(User);
 
+UserSchema.index({ email: 1 });
+UserSchema.index({ passwordResetToken: 1 }, { sparse: true });
+UserSchema.index({ mfaResetToken: 1 }, { sparse: true });
+
 UserSchema.pre('save', async function () {
   if (!this.isModified('password')) return;
   const salt = await bcrypt.genSalt(12);

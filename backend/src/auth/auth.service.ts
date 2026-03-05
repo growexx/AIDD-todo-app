@@ -2,6 +2,8 @@ import {
   Injectable,
   UnauthorizedException,
   BadRequestException,
+  ForbiddenException,
+  Logger,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService, JwtSignOptions } from '@nestjs/jwt';
@@ -12,10 +14,19 @@ import * as speakeasy from 'speakeasy';
 import * as QRCode from 'qrcode';
 import { User, UserDocument } from './schemas/user.schema';
 import { EmailService } from './email.service';
-import { encryptMfaSecret, decryptMfaSecret, generateResetToken } from './crypto.util';
+import {
+  encryptMfaSecret,
+  decryptMfaSecret,
+  generateResetToken,
+  hashResetToken,
+} from './crypto.util';
+import {
+  MAX_FAILED_ATTEMPTS,
+  DEFAULT_LOCKOUT_MINUTES,
+  RESET_TOKEN_TTL_HOURS,
+  TEMP_JWT_TTL,
+} from '../common/constants/auth.constants';
 
-const RESET_TOKEN_EXPIRY_MS = 60 * 60 * 1000; // 1 hour
-const MFA_PENDING_TOKEN_EXPIRY = '5m';
 const MFA_SETUP_PENDING_EXPIRY_MS = 10 * 60 * 1000; // 10 min
 const BACKUP_CODES_COUNT = 8;
 const BACKUP_CODE_LENGTH = 8;
@@ -28,6 +39,8 @@ export type LoginResult =
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
     private readonly jwtService: JwtService,
@@ -36,11 +49,11 @@ export class AuthService {
   ) {}
 
   private getMaxFailedAttempts(): number {
-    return Number(this.configService.get('MAX_FAILED_ATTEMPTS')) || 5;
+    return Number(this.configService.get('MAX_FAILED_ATTEMPTS')) || MAX_FAILED_ATTEMPTS;
   }
 
   private getLockoutDurationMinutes(): number {
-    return Number(this.configService.get('LOCKOUT_DURATION_MINUTES')) || 15;
+    return Number(this.configService.get('LOCKOUT_DURATION_MINUTES')) || DEFAULT_LOCKOUT_MINUTES;
   }
 
   private getFrontendUrl(): string {
@@ -75,31 +88,41 @@ export class AuthService {
 
   /**
    * Find user by email (for login flow to increment failed attempts or check locked).
+   * Input is DTO-validated; raw user string not interpolated into query.
    */
   async findUserByEmailForLogin(email: string): Promise<UserDocument | null> {
     return this.userModel
       .findOne({ email: email.toLowerCase().trim() })
-      .select('+password +failedLoginAttempts +lockedUntil +mfaEnabled')
+      .select('+password +failedLoginAttempts +lockedUntil +mfaEnabled +mfaSecret')
       .exec();
   }
 
   /**
    * Full login flow: locked -> 403, invalid -> increment/lock+email or 401, valid+MFA -> mfaPendingToken, valid -> JWT.
+   * Throws UnauthorizedException / ForbiddenException; never returns null for flow clarity when using spec-aligned API.
    */
   async login(email: string, password: string): Promise<LoginResult> {
     const user = await this.findUserByEmailForLogin(email);
     if (!user) {
-      return null;
+      this.logger.warn('Login failed — user not found', { email });
+      throw new UnauthorizedException('Invalid email or password');
     }
 
     if (this.isLocked(user)) {
-      return 'locked';
+      this.logger.warn('Login attempt on locked account', { email: user.email });
+      throw new ForbiddenException(
+        'Account locked. Check your email for reset instructions.',
+      );
     }
 
     const passwordValid = await user.comparePassword(password);
     if (!passwordValid) {
       await this.handleFailedLogin(user);
-      return null;
+      this.logger.warn('Failed login attempt', {
+        email: user.email,
+        attempts: user.failedLoginAttempts,
+      });
+      throw new UnauthorizedException('Invalid email or password');
     }
 
     if (user.mfaEnabled) {
@@ -110,7 +133,7 @@ export class AuthService {
           mfaPending: true,
         },
         {
-          expiresIn: MFA_PENDING_TOKEN_EXPIRY,
+          expiresIn: this.configService.get('TEMP_JWT_TTL') ?? TEMP_JWT_TTL,
           secret: this.configService.get<string>('JWT_SECRET'),
         } as JwtSignOptions,
       );
@@ -121,6 +144,9 @@ export class AuthService {
     return this.issueToken(user);
   }
 
+  /**
+   * On failed password: increment attempts; on 5th failure set lockout, store SHA-256 reset token, send email (fire-and-forget).
+   */
   private async handleFailedLogin(user: UserDocument): Promise<void> {
     const max = this.getMaxFailedAttempts();
     const attempts = (user.failedLoginAttempts ?? 0) + 1;
@@ -128,16 +154,25 @@ export class AuthService {
     if (attempts >= max) {
       const lockoutMs = this.getLockoutDurationMinutes() * 60 * 1000;
       user.lockedUntil = new Date(Date.now() + lockoutMs);
-      const token = generateResetToken();
-      user.passwordResetToken = await bcrypt.hash(token, 10);
-      user.passwordResetTokenExpiry = new Date(Date.now() + RESET_TOKEN_EXPIRY_MS);
+      const rawToken = generateResetToken();
+      const tokenHash = hashResetToken(rawToken);
+      const expiryHours = Number(this.configService.get('RESET_TOKEN_TTL_HOURS')) || RESET_TOKEN_TTL_HOURS;
+      const expiry = new Date(Date.now() + expiryHours * 60 * 60 * 1000);
+      user.passwordResetToken = tokenHash;
+      user.passwordResetTokenExpiry = expiry;
+      user.mfaResetToken = tokenHash;
+      user.mfaResetTokenExpiry = expiry;
       await user.save();
       const frontendUrl = this.getFrontendUrl();
-      const resetLink = `${frontendUrl}/reset-account?token=${token}`;
-      await this.emailService.sendAccountLockedEmail(user.email, resetLink);
-    } else {
-      await user.save();
+      const resetLink = `${frontendUrl}/reset-account?token=${rawToken}`;
+      this.emailService
+        .sendAccountLockedEmail(user.email, resetLink)
+        .catch((err: Error) => this.logger.error('Email failed', err.message));
+      throw new ForbiddenException(
+        'Account locked. Check your email for reset instructions.',
+      );
     }
+    await user.save();
   }
 
   private async clearLockout(userId: Types.ObjectId): Promise<void> {
@@ -310,24 +345,17 @@ export class AuthService {
 
   /**
    * Reset password using token from email; clear lockout.
+   * Input is DTO-validated; query uses SHA-256 hash of token, not raw user input.
    */
   async resetPassword(token: string, newPassword: string): Promise<void> {
-    const users = await this.userModel
-      .find({})
+    const tokenHash = hashResetToken(token);
+    const target = await this.userModel
+      .findOne({
+        passwordResetToken: tokenHash,
+        passwordResetTokenExpiry: { $gt: new Date() },
+      })
       .select('+password +passwordResetToken +passwordResetTokenExpiry')
       .exec();
-    let target: UserDocument | null = null;
-    for (const u of users) {
-      if (u.passwordResetToken && u.passwordResetTokenExpiry) {
-        if (
-          new Date(u.passwordResetTokenExpiry).getTime() > Date.now() &&
-          await bcrypt.compare(token, u.passwordResetToken)
-        ) {
-          target = u;
-          break;
-        }
-      }
-    }
     if (!target) {
       throw new BadRequestException('Invalid or expired reset token');
     }
@@ -338,28 +366,22 @@ export class AuthService {
     target.failedLoginAttempts = 0;
     target.lockedUntil = undefined;
     await target.save();
+    this.logger.log('Password reset successful', { userId: target._id.toString() });
   }
 
   /**
-   * Reset MFA using same token as password reset (from email link).
+   * Reset MFA using token from email link (same token as password reset).
+   * Input is DTO-validated; query uses SHA-256 hash of token, not raw user input.
    */
   async resetMfa(token: string): Promise<void> {
-    const users = await this.userModel
-      .find({})
-      .select('+passwordResetToken +passwordResetTokenExpiry')
+    const tokenHash = hashResetToken(token);
+    const target = await this.userModel
+      .findOne({
+        mfaResetToken: tokenHash,
+        mfaResetTokenExpiry: { $gt: new Date() },
+      })
+      .select('+mfaResetToken +mfaResetTokenExpiry')
       .exec();
-    let target: UserDocument | null = null;
-    for (const u of users) {
-      if (u.passwordResetToken && u.passwordResetTokenExpiry) {
-        if (
-          new Date(u.passwordResetTokenExpiry).getTime() > Date.now() &&
-          await bcrypt.compare(token, u.passwordResetToken)
-        ) {
-          target = u;
-          break;
-        }
-      }
-    }
     if (!target) {
       throw new BadRequestException('Invalid or expired reset token');
     }
@@ -369,7 +391,10 @@ export class AuthService {
     target.mfaBackupCodes = undefined;
     target.mfaSecretPending = undefined;
     target.mfaSecretPendingExpiry = undefined;
+    target.mfaResetToken = undefined;
+    target.mfaResetTokenExpiry = undefined;
     await target.save();
+    this.logger.log('MFA reset successful', { userId: target._id.toString() });
   }
 
   /**

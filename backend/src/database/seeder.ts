@@ -29,15 +29,20 @@ async function seed() {
     email: 'alice@todoapp.com',
     password: 'Alice@123',
   });
-  await User.create({
+  const bob = await User.create({
     name: 'Bob Johnson',
     email: 'bob@todoapp.com',
     password: 'Bob@123',
   });
-  await User.create({
+  const carol = await User.create({
     name: 'Carol White',
     email: 'carol@todoapp.com',
     password: 'Carol@123',
+  });
+  await User.create({
+    name: 'Dave User',
+    email: 'dave@todoapp.com',
+    password: 'Dave@123',
   });
 
   await Todo.create([
@@ -68,12 +73,13 @@ async function seed() {
 ==================================================
 DATABASE SEEDED SUCCESSFULLY
 ==================================================
-Default Users:
-  Email: alice@todoapp.com  | Password: Alice@123
-  Email: bob@todoapp.com    | Password: Bob@123
-  Email: carol@todoapp.com  | Password: Carol@123
+Users (run "npm run seed:rbac" or "npm run seed:all" to assign roles):
+  1. super-admin: alice@todoapp.com  | Alice@123  (full RBAC UI)
+  2. admin:       bob@todoapp.com    | Bob@123    (RBAC UI access)
+  3. manager:     carol@todoapp.com   | Carol@123
+  4. user:        dave@todoapp.com   | Dave@123   (default role)
 ==================================================
-Use these credentials to log in at http://localhost:3000
+Log in at http://localhost:3000
 ==================================================
 `);
   await mongoose.disconnect();

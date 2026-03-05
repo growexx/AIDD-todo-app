@@ -2,13 +2,11 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import toast from 'react-hot-toast';
 import { useAuth } from '@/hooks/useAuth';
 import api from '@/lib/api';
+import { getApiErrorMessage } from '@/lib/getApiError';
 import type { LoginFormData } from '@/types';
-
-const ACCOUNT_LOCKED_MESSAGE =
-  'Account locked. Check your email for reset instructions.';
-const INVALID_CREDENTIALS_MESSAGE = 'Invalid credentials';
 
 type LoginStep = 'credentials' | 'mfa';
 
@@ -21,7 +19,6 @@ function LoginContent() {
   const [mfaPendingToken, setMfaPendingToken] = useState<string | null>(null);
   const [mfaCode, setMfaCode] = useState('');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [resetSuccess, setResetSuccess] = useState(false);
 
   useEffect(() => {
@@ -32,7 +29,6 @@ function LoginContent() {
 
   const handleCredentialsSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
     setLoading(true);
     try {
       const { data } = await api.post<{
@@ -52,15 +48,7 @@ function LoginContent() {
         router.push('/dashboard');
       }
     } catch (err: unknown) {
-      const res = err && typeof err === 'object' && 'response' in err
-        ? (err as { response?: { status?: number; data?: { message?: string } } }).response
-        : null;
-      const message = res?.data?.message ?? 'Login failed';
-      if (res?.status === 403) {
-        setError(ACCOUNT_LOCKED_MESSAGE);
-      } else {
-        setError(message === 'Forbidden' ? ACCOUNT_LOCKED_MESSAGE : message);
-      }
+      toast.error(getApiErrorMessage(err));
     } finally {
       setLoading(false);
     }
@@ -69,25 +57,20 @@ function LoginContent() {
   const handleMfaSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!mfaPendingToken) return;
-    setError(null);
     setLoading(true);
     try {
       const { data } = await api.post<{
         success: true;
         data: { access_token: string; user: { id: string; name: string; email: string } };
       }>('/api/auth/verify-mfa', {
-        mfaPendingToken,
+        tempToken: mfaPendingToken,
         code: mfaCode,
       });
       const payload = data.data;
       login(payload.access_token, payload.user);
       router.push('/dashboard');
     } catch (err: unknown) {
-      const message =
-        err && typeof err === 'object' && 'response' in err
-          ? (err as { response?: { data?: { message?: string } } }).response?.data?.message
-          : 'Invalid verification code';
-      setError(message ?? 'Invalid verification code');
+      toast.error(getApiErrorMessage(err));
     } finally {
       setLoading(false);
     }
@@ -97,7 +80,6 @@ function LoginContent() {
     setStep('credentials');
     setMfaPendingToken(null);
     setMfaCode('');
-    setError(null);
   };
 
   return (
@@ -141,9 +123,6 @@ function LoginContent() {
                 autoComplete="current-password"
               />
             </div>
-            {error && (
-              <p className="text-sm text-red-600">{error}</p>
-            )}
             <button
               type="submit"
               disabled={loading}
@@ -174,9 +153,6 @@ function LoginContent() {
                 required
               />
             </div>
-            {error && (
-              <p className="text-sm text-red-600">{error}</p>
-            )}
             <div className="flex gap-2">
               <button
                 type="button"
@@ -197,10 +173,11 @@ function LoginContent() {
         )}
 
         <div className="mt-6 rounded-lg bg-zinc-50 p-4 text-sm text-zinc-600">
-          <p className="mb-2 font-medium text-zinc-700">Demo credentials:</p>
-          <p>alice@todoapp.com / Alice@123</p>
-          <p>bob@todoapp.com   / Bob@123</p>
-          <p>carol@todoapp.com / Carol@123</p>
+          <p className="mb-2 font-medium text-zinc-700">Demo credentials (run npm run seed:all in backend first):</p>
+          <p>1. super-admin: alice@todoapp.com / Alice@123</p>
+          <p>2. admin:       bob@todoapp.com / Bob@123</p>
+          <p>3. manager:     carol@todoapp.com / Carol@123</p>
+          <p>4. user:        dave@todoapp.com / Dave@123</p>
         </div>
       </div>
     </div>

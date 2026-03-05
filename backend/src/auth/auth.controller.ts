@@ -1,15 +1,6 @@
-import {
-  Controller,
-  Post,
-  Get,
-  Body,
-  Req,
-  UseGuards,
-  UnauthorizedException,
-  ForbiddenException,
-} from '@nestjs/common';
+import { Controller, Post, Get, Body, Req, UseGuards, BadRequestException } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
-import { ThrottlerGuard } from '@nestjs/throttler';
+import { ThrottlerGuard, Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { VerifyMfaDto } from './dto/verify-mfa.dto';
@@ -19,12 +10,9 @@ import { ResetMfaDto } from './dto/reset-mfa.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import type { RequestWithUser } from './types';
 
-const ACCOUNT_LOCKED_MESSAGE =
-  'Account locked. Check your email for reset instructions.';
-const INVALID_CREDENTIALS_MESSAGE = 'Invalid credentials';
-
 @ApiTags('Auth')
 @Controller('api/auth')
+@Throttle({ default: { limit: 5, ttl: 60000 } })
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
@@ -36,16 +24,7 @@ export class AuthController {
   @ApiResponse({ status: 403, description: 'Account locked' })
   @ApiResponse({ status: 429, description: 'Too Many Requests' })
   async login(@Body() dto: LoginDto) {
-    const result = await this.authService.login(dto.email, dto.password);
-
-    if (result === null) {
-      throw new UnauthorizedException(INVALID_CREDENTIALS_MESSAGE);
-    }
-    if (result === 'locked') {
-      throw new ForbiddenException(ACCOUNT_LOCKED_MESSAGE);
-    }
-
-    return result;
+    return this.authService.login(dto.email, dto.password);
   }
 
   @Post('verify-mfa')
@@ -54,11 +33,11 @@ export class AuthController {
   @ApiResponse({ status: 200, description: 'MFA verified; returns token and user' })
   @ApiResponse({ status: 401, description: 'Invalid or expired session / code' })
   async verifyMfa(@Body() dto: VerifyMfaDto) {
-    const result = await this.authService.verifyMfa(dto.mfaPendingToken, dto.code);
-    if (!result || result === 'locked' || 'requiresMfa' in result) {
-      throw new UnauthorizedException('Invalid verification code');
+    const token = dto.tempToken ?? dto.mfaPendingToken;
+    if (!token) {
+      throw new BadRequestException('tempToken or mfaPendingToken is required');
     }
-    return result;
+    return this.authService.verifyMfa(token, dto.code);
   }
 
   @Post('mfa/setup')

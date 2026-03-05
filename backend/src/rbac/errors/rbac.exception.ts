@@ -8,6 +8,7 @@ export const RBAC_ERROR_CODES = {
   NOT_FOUND: 'NOT_FOUND',
   CONFLICT: 'CONFLICT',
   INTERNAL_ERROR: 'INTERNAL_ERROR',
+  NOT_IMPLEMENTED: 'NOT_IMPLEMENTED',
 } as const;
 
 export interface RbacErrorDetails {
