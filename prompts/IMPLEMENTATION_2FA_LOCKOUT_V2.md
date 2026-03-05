@@ -249,24 +249,34 @@ GLOBAL RULE — ALL ERRORS VIA TOAST:
   Every catch block in every new and modified component must call:
     toast.error(getApiErrorMessage(err))
   NEVER render inline error messages on the component (no error state rendered in JSX).
-  Import getApiErrorMessage from frontend/src/lib/errors.ts (create if absent).
+  Import getApiErrorMessage from frontend/src/lib/getApiError.ts (or errors.ts; create if absent).
   getApiErrorMessage must handle: AxiosError with response.data.message (string or string[]),
-    network errors (no response), and unknown errors (fallback: 'Something went wrong').
+    network errors (no response), 429 rate limit, and unknown errors (see 5.1 for fallbacks).
   This aligns with dashboard.page.tsx audit fix [MEDIUM] and makes error UX consistent.
 
-5.1 errors.ts helper (create or extend)
-  File: frontend/src/lib/errors.ts
-  Export:
-    export function getApiErrorMessage(err: unknown): string {
-      if (isAxiosError(err)) {
-        const msg = err.response?.data?.message;
-        if (Array.isArray(msg)) return msg[0];
-        if (typeof msg === 'string') return msg;
-        return err.message;
-      }
-      if (err instanceof Error) return err.message;
-      return 'Something went wrong. Please try again.';
-    }
+5.1 getApiErrorMessage helper (create or extend)
+  File: frontend/src/lib/getApiError.ts (or frontend/src/lib/errors.ts)
+  Export getApiError(err) and getApiErrorMessage(err). Message resolution order:
+    1. response.data.message (if string use as-is; if array use first element).
+    2. response.data.error.message.
+    3. Status-based fallbacks when no body message:
+       - 401 → "Invalid email or password."
+       - 403 → "Account locked. Check your email for reset instructions."
+       - 429 → "Too many attempts. Please try again later."
+    4. Network errors: if error.code === 'ERR_NETWORK' or !response → "Network error. Please check your connection."
+    5. err.message (e.g. Axios default).
+    6. Fallback: "Something went wrong. Please try again."
+  This ensures wrong credentials, locked account, rate limit, and offline all show a clear toast.
+
+5.1b API client (axios) — login 401 handling
+  File: frontend/src/lib/api.ts (or wherever the axios instance and response interceptor live)
+  If a global response interceptor redirects to /login and clears token on 401:
+    Do NOT run that redirect/clear when the failed request was to login or verify-mfa.
+    Example: if (error.response?.status === 401 && !isAuthRequest) { clear token; redirect; }
+    where isAuthRequest = (error.config?.url ?? '').includes('/auth/login') || ...includes('/auth/verify-mfa').
+  Reason: 401 on POST /auth/login (wrong credentials) or POST /auth/verify-mfa (invalid code) must
+  leave the user on the page so the catch block can run and toast.error(getApiErrorMessage(err))
+  is shown; otherwise a full-page redirect can hide the error toast.
 
 5.2 UPDATED LOGIN PAGE
   File: frontend/src/app/login/page.tsx (or existing Login component)
@@ -274,13 +284,15 @@ GLOBAL RULE — ALL ERRORS VIA TOAST:
     On 200 with requiresMfa: true → store tempToken in React state (NOT localStorage);
       show TOTP input step in the same page (conditional render, not a new route).
     On 200 with token → dispatch setCredentials to authSlice; redirect to /dashboard.
-    On 401 → toast.error(getApiErrorMessage(err))   ← NO inline "Invalid credentials" text
-    On 403 → toast.error(getApiErrorMessage(err))   ← e.g. "Account locked. Check your email…"
-    On network error → toast.error(getApiErrorMessage(err))
+    On 401 (wrong credentials) → toast.error(getApiErrorMessage(err)); user stays on page (see 5.1b).
+    On 403 (account locked) → toast.error(getApiErrorMessage(err)).
+    On 429 (rate limit) → toast.error(getApiErrorMessage(err)).
+    On network error → toast.error(getApiErrorMessage(err)).
+    NO inline "Invalid credentials" or any error text in JSX.
   - Step 2 (MFA input, conditional):
     Submit code + tempToken → POST /auth/verify-mfa.
     On 200 → dispatch setCredentials; redirect to /dashboard.
-    On 401 → toast.error(getApiErrorMessage(err))
+    On 401 (invalid code) → toast.error(getApiErrorMessage(err)); user stays on MFA step (see 5.1b).
   - No error state in component; no <p> or <span> with error text rendered in JSX.
   - Show loading spinner (button disabled) during request.
   - tempToken must NOT be persisted in localStorage or sessionStorage; keep in useState only.
@@ -412,7 +424,8 @@ Backend (new / modified):
   [ ] backend/.env.example                                   (MODIFIED — new vars)
 
 Frontend (new / modified):
-  [ ] frontend/src/lib/errors.ts                             (NEW or MODIFIED)
+  [ ] frontend/src/lib/getApiError.ts (or errors.ts)          (NEW or MODIFIED — see 5.1, 5.1b)
+  [ ] frontend/src/lib/api.ts                                (MODIFIED — 401 interceptor per 5.1b)
   [ ] frontend/src/app/login/page.tsx                        (MODIFIED)
   [ ] frontend/src/app/reset-account/page.tsx                (NEW)
   [ ] frontend/src/app/settings/page.tsx                     (MODIFIED — MFA setup section)

@@ -222,7 +222,7 @@ POST {{api_prefix}}/roles                   [requires: role:create]
   409 CONFLICT if role name already exists.
 
 GET {{api_prefix}}/roles                    [requires: role:view]
-  Query: page (default 1), limit (default 20, max 100), search (optional, matches name).
+  Query: page (default 1), limit (default 20, max 200), search (optional, matches name).
   200 + { data: Role[], meta: { page, limit, total } }.
 
 GET {{api_prefix}}/roles/:id               [requires: role:view]
@@ -262,7 +262,7 @@ DELETE {{api_prefix}}/roles/:id/permissions/:permissionId  [requires: permission
 --- PERMISSIONS ---
 
 GET {{api_prefix}}/permissions             [requires: permission:view]
-  Query: page (default 1), limit (default 20, max 100), search (optional, matches code).
+  Query: page (default 1), limit (default 20, max 200), search (optional, matches code).
   200 + { data: Permission[], meta: { page, limit, total } }.
 
 --- USER–ROLES ---
@@ -413,8 +413,8 @@ Required methods:
     Returns counts. Throws RbacNotFoundError if no default role exists.
     Throws RbacValidationError if userModel is not provided.
 
-Pagination: all list methods accept { page, limit, search }; enforce limit max 100
-server-side (clamp silently to 100 if exceeded). Return { data, total, page, limit }.
+Pagination: all list methods accept { page, limit, search }; enforce limit max 200
+server-side (clamp silently to 200 if exceeded). Return { data, total, page, limit }.
 
 Search parameter escaping (ReDoS/regex injection — audit A05, MERN_AUDIT): Before using the
 search parameter in listRoles or listPermissions in a $regex filter, escape special regex
@@ -661,7 +661,7 @@ Validation rules per route:
 
   GET /roles, GET /permissions:
     - query('page').optional().isInt({ min: 1 }).toInt()
-    - query('limit').optional().isInt({ min: 1, max: 100 }).toInt()
+    - query('limit').optional().isInt({ min: 1, max: 200 }).toInt()
     - query('search').optional().trim()
 
   GET /roles/:id, DELETE /roles/:id:
@@ -740,7 +740,7 @@ Input validation:
 - All MongoDB ObjectId params: validate with IsMongoId() (class-validator) or ParseObjectIdPipe.
 - All permission codes: validate with regex before any DB operation.
 - All required string fields: notEmpty() + trim().
-- limit query param: max 100 — return 400 VALIDATION_ERROR if exceeded (do not clamp silently).
+- limit query param: max 200 — return 400 VALIDATION_ERROR if exceeded (do not clamp silently).
 - page query param: min 1.
 
 Duplicate prevention:
@@ -1118,7 +1118,7 @@ Add one additional backend endpoint required by the Role Detail Page:
 
   GET {{api_prefix}}/roles/:id/users     [requires: role:view]
     Returns a paginated list of userIds assigned to a given role.
-    Query: page (default 1), limit (default 20, max 100).
+    Query: page (default 1), limit (default 20, max 200).
     Response: 200 + { data: [{ userId, assignedAt, isBackfilled }], meta: { page, limit, total } }
     404 NOT_FOUND if role does not exist.
 
@@ -1322,7 +1322,7 @@ tests/rbac/rbac.routes.test.js
   3. POST /roles — 409 on duplicate name (service throws RbacConflictError)
   4. POST /roles — 403 when req.permissions lacks role:create
   5. GET /roles — 200 with paginated data
-  6. GET /roles — 400 if limit > 100
+  6. GET /roles — 400 if limit > 200
   7. GET /roles/:id — 200 with populated role
   8. GET /roles/:id — 404 on unknown id
   9. GET /roles/:id — 400 on invalid MongoId format

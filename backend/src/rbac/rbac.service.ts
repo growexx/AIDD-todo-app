@@ -29,7 +29,7 @@ export interface ListResult<T> {
   limit: number;
 }
 
-const MAX_LIMIT = 100;
+const MAX_LIMIT = 200;
 
 export const RBAC_CONFIG = 'RBAC_CONFIG';
 
