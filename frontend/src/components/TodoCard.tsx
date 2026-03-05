@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import type { Todo } from '@/types';
 
 interface TodoCardProps {
@@ -17,7 +17,28 @@ const priorityColors: Record<string, string> = {
 };
 
 function TodoCardInner({ todo, onToggle, onEdit, onDelete }: TodoCardProps) {
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+
   const priorityClass = priorityColors[todo.priority] ?? 'bg-zinc-100 text-zinc-800';
+
+  const handleDeleteClick = () => {
+    setPendingDeleteId(todo.id);
+    setIsDeleteConfirmOpen(true);
+  };
+
+  const handleConfirmDelete = () => {
+    if (pendingDeleteId) {
+      onDelete(pendingDeleteId);
+      setPendingDeleteId(null);
+    }
+    setIsDeleteConfirmOpen(false);
+  };
+
+  const handleCancelDelete = () => {
+    setPendingDeleteId(null);
+    setIsDeleteConfirmOpen(false);
+  };
 
   return (
     <div className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
@@ -60,13 +81,47 @@ function TodoCardInner({ todo, onToggle, onEdit, onDelete }: TodoCardProps) {
           </button>
           <button
             type="button"
-            onClick={() => onDelete(todo.id)}
+            onClick={handleDeleteClick}
             className="rounded bg-red-100 px-2 py-1 text-sm text-red-800 hover:bg-red-200"
           >
             Delete
           </button>
         </div>
       </div>
+
+      {isDeleteConfirmOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="delete-dialog-title"
+        >
+          <div className="w-full max-w-sm rounded-lg border border-zinc-200 bg-white p-4 shadow-lg">
+            <h2 id="delete-dialog-title" className="font-medium text-zinc-800">
+              Delete todo?
+            </h2>
+            <p className="mt-2 text-sm text-zinc-600">
+              Are you sure you want to delete &quot;{todo.title}&quot;?.
+            </p>
+            <div className="mt-4 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={handleCancelDelete}
+                className="rounded bg-zinc-100 px-3 py-1.5 text-sm font-medium text-zinc-800 hover:bg-zinc-200"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDelete}
+                className="rounded bg-red-100 px-3 py-1.5 text-sm font-medium text-red-800 hover:bg-red-200"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

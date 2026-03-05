@@ -47,8 +47,9 @@ export default function DashboardPage() {
         }>('/api/todos', { params });
         const items = (data.data?.items ?? []).map(normalizeTodo);
         setTodos(items);
-      } catch {
-        toast.error('Failed to load todos');
+      } catch (err: unknown) {
+        const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+        toast.error(msg || 'Something went wrong');
       } finally {
         setLoading(false);
       }
@@ -86,13 +87,10 @@ export default function DashboardPage() {
       const newTodo = normalizeTodo(data.data);
       setTodos((prev) => [newTodo, ...prev]);
       setShowForm(false);
-      toast.success('Todo created');
+      toast.success((data.data as { message?: string })?.message || 'Todo created successfully');
     } catch (err: unknown) {
-      const msg =
-        err && typeof err === 'object' && 'response' in err
-          ? (err as { response?: { data?: { message?: string } } }).response?.data?.message
-          : 'Failed to create';
-      toast.error(msg ?? 'Failed to create');
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      toast.error(msg || 'Something went wrong');
     } finally {
       setSubmitting(false);
     }
@@ -109,13 +107,10 @@ export default function DashboardPage() {
       const updated = normalizeTodo(data.data);
       setTodos((prev) => prev.map((t) => (t.id === updated.id ? updated : t)));
       setEditingTodo(null);
-      toast.success('Todo updated');
+      toast.success((data.data as { message?: string })?.message || 'Todo updated successfully');
     } catch (err: unknown) {
-      const msg =
-        err && typeof err === 'object' && 'response' in err
-          ? (err as { response?: { data?: { message?: string } } }).response?.data?.message
-          : 'Failed to update';
-      toast.error(msg ?? 'Failed to update');
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      toast.error(msg || 'Something went wrong');
     } finally {
       setSubmitting(false);
     }
@@ -128,19 +123,23 @@ export default function DashboardPage() {
       );
       const toggled = normalizeTodo(data.data);
       setTodos((prev) => prev.map((t) => (t.id === toggled.id ? toggled : t)));
-      toast.success(toggled.completed ? 'Marked complete' : 'Marked incomplete');
-    } catch {
-      toast.error('Failed to toggle');
+      toast.success((data.data as { message?: string })?.message || 'Todo updated successfully');
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      toast.error(msg || 'Something went wrong');
     }
   };
 
   const handleDelete = async (id: string) => {
     try {
-      await api.delete(`/api/todos/${id}`);
+      const { data } = await api.delete<{ success: true; data: { message?: string } }>(
+        `/api/todos/${id}`,
+      );
       setTodos((prev) => prev.filter((t) => t.id !== id));
-      toast.success('Todo deleted');
-    } catch {
-      toast.error('Failed to delete');
+      toast.success(data.data?.message || 'Todo deleted successfully');
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      toast.error(msg || 'Something went wrong');
     }
   };
 
